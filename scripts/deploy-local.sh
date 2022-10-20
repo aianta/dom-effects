@@ -18,6 +18,7 @@ if [ ! -d "$DOM_EFFECTS_FOLDER" ]; then
 fi
 
 # Copy this contents over. 
-cp -a "${DOM_EFFECTS_PATH}/." $TARGET_DIR
+cp "${DOM_EFFECTS_PATH}/dom-effects.js" $TARGET_DIR
+cp "${DOM_EFFECTS_PATH}/package.json" $TARGET_DIR
 
 echo "dom-effects copied to local canvas install path ${TARGET_DIR}"
