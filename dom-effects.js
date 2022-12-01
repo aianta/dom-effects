@@ -2,6 +2,7 @@ export default (function(){
 
     console.log("dom-effects ran!")
 
+
     const nodeFields = [
         "async",
         "baseURI",
@@ -20,6 +21,7 @@ export default (function(){
         "type",
         "text"
     ]
+
 
     // Generating XPath
     // https://stackoverflow.com/questions/3454526/how-to-calculate-the-xpath-position-of-an-element-using-javascript
@@ -107,24 +109,54 @@ export default (function(){
     const observerOptions = {
         childList: true,
         attributes: true,
+        attributeFilter: ['style'],
         characterData: true,
         subtree: true
     }
 
     const callback = (mutationList, observer) => {
-        const eventDetails = {
-            name:'DOM_EFFECT'
-        }
+
 
         for (const mutation of mutationList){
-            console.log(`A mutation of type ${mutation.type} has been observed`)
-            console.log(mutation)
+            //Get an event details object ready
+            let eventDetails = {
+                name:'DOM_EFFECT'
+            }
+            
+            /**
+             * Watch for changes in the style attribute of elements, 
+             * specifically for the 'display' property. 
+             * If 'display' has changed since last we saw it, fire off the appropriate
+             * 'show' or 'hide' log event.
+             */
+            if (mutation.type === 'attributes' &&
+                mutation.target.lastDisplayValue &&
+                mutation.target.style.display !== mutation.target.lastDisplayValue){
+                
+                    eventDetails.action = mutation.target.style.display !== "none"? "show":"hide"
+                    eventDetails.nodes = []
+                    eventDetails.nodes.push(stripDataFromNode(mutation.target))
+                    console.log("OLD:",mutation.target.lastDisplayValue, "NEW:", mutation.target.style.display, "@", getElementTreeXPath(mutation.target))
+                    //update the last display value
+                    mutation.target.lastDisplayValue = mutation.target.style.display
+            }
+
             if (mutation.type === "childList"){
+
 
                 //If a node was added
                 if(mutation.addedNodes.length > 0){
                     eventDetails.action = 'add'
                     eventDetails.nodes = stripDataFromNodes(mutation.addedNodes)
+                    
+                    //Mark elements with display CSS property set, store that 'last' display value in their properties.
+                    //This allows us to fire off 'show' and 'hide' events on 'style' attribute mutations.
+                    Array.from(mutation.addedNodes)
+                        .filter(node=>node instanceof Element && node.style.display !== "")
+                        .forEach(element=>{
+                            element.lastDisplayValue = element.style.display
+                        })
+
                 }
 
                 //If a node was removed
@@ -133,13 +165,15 @@ export default (function(){
                     eventDetails.nodes = stripDataFromNodes(mutation.removedNodes)
                 }
 
-                //Ensure LogUI is defined and active. Only log event if we have nodes to report
-                if(window.LogUI && window.LogUI.isActive() && eventDetails.nodes.length > 0){
-                    console.log("passing eventDetails")
-                    console.log(eventDetails)
-                    window.LogUI.logCustomMessage(eventDetails)
-                }
+
                 
+            }
+
+            //Ensure LogUI is defined and active. Only log event if we have nodes to report
+            if(window.LogUI && window.LogUI.isActive() && eventDetails.nodes && eventDetails.nodes.length > 0){
+                console.log("passing eventDetails")
+                console.log(eventDetails)
+                window.LogUI.logCustomMessage(eventDetails)
             }
 
         }
@@ -152,7 +186,5 @@ export default (function(){
      */
     observer.observe(document.documentElement, observerOptions)
 
-    window.setTimeout(function(){
-        observer.disconnect()
-    }, 60000)
+
 })(window)
