@@ -2,6 +2,10 @@ export default (function(){
 
     console.log("dom-effects ran!")
 
+    const rootFields = [
+        "outerHTML",
+        "outerText"
+    ]
 
     const nodeFields = [
         "async",
@@ -17,6 +21,8 @@ export default (function(){
         "localName",
         "outerHTML",
         "innerHTML",
+        "outerText",
+        "textContent",
         "title",
         "type",
         "text"
@@ -64,7 +70,7 @@ export default (function(){
         };
 
     // Helper function that strips data from fields listed in nodeFields and returns them in an object
-    const stripDataFromNode = function(node){
+    const stripDataFromNode = function(node, index){
         const data = {}
 
         //Also report XPATH
@@ -89,7 +95,7 @@ export default (function(){
             // Don't bother getting data for elements with null xpath
             const nodeData = stripDataFromNode(node)
             if (nodeData.xpath !== null){
-                data.push(stripDataFromNode(node))
+                data.push(stripDataFromNode(node, data.length))
             }
 
         })
@@ -172,7 +178,23 @@ export default (function(){
             //Ensure LogUI is defined and active. Only log event if we have nodes to report
             if(window.LogUI && window.LogUI.isActive() && eventDetails.nodes && eventDetails.nodes.length > 0){
                 console.log("passing eventDetails")
+                
+                // If there's only one node, move the xpath field out into eventDetails for convenience
+                if(eventDetails.nodes.length === 1){
+                    eventDetails.xpath = eventDetails.nodes[0].xpath
+                }
+
+                //Don't log script or style elements
+                if(eventDetails.nodes.length === 1 && eventDetails.nodes[0].localName === 'script' || eventDetails.nodes[0].localName === 'style'){
+                    return
+                }
+
+                eventDetails.domSnapshot = JSON.stringify(document.documentElement, rootFields)
                 console.log(eventDetails)
+                
+                //Stringify nodes before we send it
+                eventDetails.nodes = JSON.stringify(eventDetails.nodes)
+
                 window.LogUI.logCustomMessage(eventDetails)
             }
 
