@@ -189,7 +189,7 @@ export default (function(){
                     return
                 }
 
-                eventDetails.domSnapshot = JSON.stringify(document.documentElement, rootFields)
+                eventDetails.domSnapshot = JSON.stringify(document.body, rootFields)
                 console.log(eventDetails)
                 
                 //Stringify nodes before we send it
